@@ -1,0 +1,28 @@
+local list = {
+	["particleemitter"] = true;
+	['sparkles'] = true;
+	['beam'] = true;
+	['trail'] = true;
+	['fire'] = true;
+	['smoke'] = true;
+	['highlight'] = true;	
+}
+local function isinlist(p)
+	print(2)
+	local find = list[string.lower(p.ClassName)]
+	print(find)
+	if find then
+		print(3)
+		return true else return false
+	end
+end
+game.Workspace.DescendantAdded:Connect(function(obj)
+	print(1)
+	if isinlist(obj) then
+
+		pcall(function()
+			print(4)
+			obj.Enabled = false
+		end)
+	end
+end)
