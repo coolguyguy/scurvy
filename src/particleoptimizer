@@ -1,82 +1,109 @@
-existed = getgenv()["_coolguyguy/do/particleoptimizer/exist"]
-if existed == nil or false then
-	local list = {
-		["particleemitter"] = true;
-		['sparkles'] = true;
-		['beam'] = true;
-		['trail'] = true;
-		['fire'] = true;
-		['smoke'] = true;
-		['highlight'] = true;
-		['blur'] = true;
-		['depthoffield'] = true;
-		['sunrays'] = true;
-		['bloomeffect'] = true;
-		['colorcorrectioneffect'] = true;
-	}
-	local function isinlist(p)
-		local find = list[string.lower(p.ClassName)]
-		print(find)
-		if find then
-			return true else return false
-		end
-	end
-	do --do for existing instances
-		for _, obj in ipairs(game:GetDescendants()) do
-			task.wait()
-			if isinlist(obj) then
-	
-				pcall(function()
-					obj.Enabled = false
-				end)
-			end
-		end
-	end
-	game.DescendantAdded:Connect(function(obj)
-		if isinlist(obj) then
-			task.wait()
-			pcall(function()
-				obj.Enabled = false
-			end)
-		end
-	end)
-	
+--// particle optimizer (sUNC safe)
+
+local GENV_KEY = "_coolguyguy/do/particleoptimizer/exist"
+local genv = getgenv()
+
+if genv[GENV_KEY] then
 	pcall(function()
-		local _fpslabel = Instance.new("TextLabel")
-		_fpslabel.Parent = game:GetService("CoreGui"):WaitForChild("RobloxGui") or game.Players.LocalPlayer.PlayerGui:WaitForChild("Freecam") or nil
-		_fpslabel.BackgroundTransparency = 1
-		_fpslabel.TextColor3 = Color3.new(1,1,1)
-		_fpslabel.Size = UDim2.fromOffset(50,25)
-		_fpslabel.TextScaled = true
-		local delta = 0
-		game["Run Service"].RenderStepped:Connect(function(dt)
-			delta = dt
-		end)
-		game.StarterGui:SetCore("SendNotification",{
+		game:GetService("StarterGui"):SetCore("SendNotification", {
 			Title = "particle_opt",
-			Text = "v1.3",
-			Duration = 5,
-				Icon = game.Players:GetUserThumbnailAsync(
-					game.Players.LocalPlayer.UserId,
-					Enum.ThumbnailType.HeadShot,
-					Enum.ThumbnailSize.Size352x352
-				)
+			Text = "already running (rejoin to re-execute)",
+			Duration = 4
 		})
-		
-			while task.wait(1) do
-			_fpslabel.Text = "fps: "..math.floor(1/delta)
+	end)
+	return
+end
+
+genv[GENV_KEY] = true
+
+--// services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local StarterGui = game:GetService("StarterGui")
+local CoreGui = game:GetService("CoreGui")
+
+local lp = Players.LocalPlayer
+
+--// class allowlist
+local disableClasses = {
+	particleemitter = true,
+	sparkles = true,
+	beam = true,
+	trail = true,
+	fire = true,
+	smoke = true,
+	highlight = true,
+	blur = true,
+	depthoffield = true,
+	sunrays = true,
+	bloomeffect = true,
+	colorcorrectioneffect = true
+}
+
+local function shouldDisable(obj)
+	return disableClasses[string.lower(obj.ClassName)] == true
+end
+
+local function disableObj(obj)
+	if shouldDisable(obj) then
+		pcall(function()
+			obj.Enabled = false
+		end)
+	end
+end
+
+--// disable existing instances (batched, fast)
+do
+	local count = 0
+	for _, obj in ipairs(game:GetDescendants()) do
+		count += 1
+		disableObj(obj)
+		if count % 300 == 0 then
+			task.wait()
+		end
+	end
+end
+
+--// disable future instances
+game.DescendantAdded:Connect(disableObj)
+
+--// FPS label
+pcall(function()
+	local guiParent = CoreGui:FindFirstChild("RobloxGui")
+		or lp:WaitForChild("PlayerGui")
+
+	local label = Instance.new("TextLabel")
+	label.BackgroundTransparency = 1
+	label.TextColor3 = Color3.new(1, 1, 1)
+	label.TextScaled = true
+	label.Size = UDim2.fromOffset(60, 26)
+	label.Position = UDim2.fromOffset(6, 6)
+	label.Font = Enum.Font.SourceSansBold
+	label.Parent = guiParent
+
+	local dt = 1 / 60
+	RunService.RenderStepped:Connect(function(delta)
+		dt = delta
+	end)
+
+	task.spawn(function()
+		while true do
+			label.Text = "FPS: " .. math.floor(1 / dt)
+			task.wait(1)
 		end
 	end)
-	getgenv()["_coolguyguy/do/particleoptimizer/exist"] = true
-else
-			game.StarterGui:SetCore("SendNotification",{
-			Title = "particle_opt",
-			Text = "this script is already ran? please rejoin if u want to re-execute",
-			Duration = 5,
-				Icon = game.Players:GetUserThumbnailAsync(
-					game.Players.LocalPlayer.UserId,
-					Enum.ThumbnailType.HeadShot,
-					Enum.ThumbnailSize.Size352x352
-				)
-		})
-end
+end)
+
+--// notification
+pcall(function()
+	StarterGui:SetCore("SendNotification", {
+		Title = "particle_opt",
+		Text = "v1.3 loaded",
+		Duration = 4,
+		Icon = Players:GetUserThumbnailAsync(
+			lp.UserId,
+			Enum.ThumbnailType.HeadShot,
+			Enum.ThumbnailSize.Size352x352
+		)
+	})
+end)
