@@ -23,6 +23,7 @@ if existed == nil or false then
 	end
 	do --do for existing instances
 		for _, obj in ipairs(game:GetDescendants()) do
+			task.wait()
 			if isinlist(obj) then
 	
 				pcall(function()
@@ -33,7 +34,7 @@ if existed == nil or false then
 	end
 	game.DescendantAdded:Connect(function(obj)
 		if isinlist(obj) then
-	
+			task.wait()
 			pcall(function()
 				obj.Enabled = false
 			end)
